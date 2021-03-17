@@ -12,6 +12,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+use std::io;
+use std::io::Write;
+
+use std::process;
+
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -49,7 +54,36 @@ struct Options {
 	download: bool
 }
 
+fn operation_failed(err: &str, qof: bool) -> bool {
+	println!("{}", err);
+	if qof {
+		return true
+	}
+	print!("Continue backup? [y/N]: ");
+	let mut input = String::new();
+	io::stdout().flush().expect("Failed to flush");
+	match io::stdin().read_line(&mut input) {
+		Ok(_) => match input.trim() {
+			"y" | "Y" => false,
+			_ => {
+				println!("User canceled");
+				true
+			}
+		},
+		Err(_) => {
+			panic!("Failed to read");
+		}
+	}
+}
+
+fn run_backup(opt: &Options) -> bool {
+	true
+}
+
 fn main() {
 	let opt = Options::from_args();
-	println!("{:?}", opt);
+	process::exit(match run_backup(&opt) {
+		true => 1,
+		false => 0
+	});
 }
