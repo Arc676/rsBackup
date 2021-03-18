@@ -16,6 +16,9 @@ use std::io;
 use std::io::Write;
 
 use std::process;
+use std::io::BufReader;
+use std::fs::File;
+use std::path::Path;
 
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -77,6 +80,17 @@ fn operation_failed(err: &str, qof: bool) -> bool {
 }
 
 fn run_backup(opt: &Options) -> bool {
+	let path = match &opt.config {
+		Some(path) => path.as_path(),
+		None => Path::new("~/.arcutillib/backup.conf")
+	};
+	let result = File::open(&path);
+	if let Err(why) = result {
+		operation_failed(&why.to_string(), true);
+		return false;
+	}
+	let mut config = result.unwrap();
+	let mut config_reader = BufReader::new(config);
 	true
 }
 
