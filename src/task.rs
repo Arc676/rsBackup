@@ -97,18 +97,26 @@ impl Task {
 				};
 			}
 		}
-		if task.src.is_none() {
-			return Err(String::from("No source path specified."));
-		}
-		if !task.src.as_ref().unwrap().exists() {
-			return Err(String::from("Source path nonexistent or inaccessible."));
-		}
-		if task.dst.is_none() {
-			return Err(String::from("No destination path specified."));
-		}
-		if !task.dst.as_ref().unwrap().exists() {
-			return Err(String::from("Destination path nonexistent or inaccessible."));
-		}
+		match task.src {
+			Some(ref path) => {
+				if !path.exists() {
+					return Err(String::from("Source path nonexistent or inaccessible."));
+				}
+			},
+			None => {
+				return Err(String::from("No source path specified."));
+			}
+		};
+		match task.dst {
+			Some(ref path) => {
+				if !path.exists() {
+					return Err(String::from("Destination path nonexistent or inaccessible."));
+				}
+			},
+			None => {
+				return Err(String::from("No destination path specified."));
+			}
+		};
 		Ok(task)
 	}
 }
