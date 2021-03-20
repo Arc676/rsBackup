@@ -64,16 +64,22 @@ fn operation_failed(err: &str, qof: bool) -> bool {
 	if qof {
 		return true
 	}
-	print!("Continue backup? [y/N]: ");
+	if !get_yn("Continue backup?", false) {
+		println!("User canceled");
+		return true;
+	}
+	false
+}
+
+fn get_yn(prompt: &str, default: bool) -> bool {
+	print!("{} [{}]: ", prompt, match default { true => "Y/n", false => "y/N" });
 	let mut input = String::new();
 	io::stdout().flush().expect("Failed to flush");
 	match io::stdin().read_line(&mut input) {
 		Ok(_) => match input.trim() {
-			"y" | "Y" => false,
-			_ => {
-				println!("User canceled");
-				true
-			}
+			"y" | "Y" => true,
+			"n" | "N" => false,
+			_ => default
 		},
 		Err(_) => {
 			panic!("Failed to read");
@@ -88,7 +94,8 @@ fn run_backup(opt: &Options) -> bool {
 	};
 	let result = File::open(&path);
 	if let Err(why) = result {
-		operation_failed(&why.to_string(), true);
+		let err = format!("Failed to read configuration file: {}", why);
+		operation_failed(&err, true);
 		return false;
 	}
 	let config = result.unwrap();
