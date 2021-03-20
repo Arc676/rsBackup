@@ -103,6 +103,24 @@ fn run_backup(opt: &Options) -> bool {
 	loop {
 		match task::Task::from_reader(&mut config_reader) {
 			Ok(task) => {
+				if task.is_update_task() {
+					println!("Found update task.");
+				} else {
+					println!("Found backup task.");
+				}
+				if opt.id_tasks {
+					println!("Task ID: {}", task.get_id());
+				}
+				if opt.always_confirm || task.should_confirm() {
+					let prompt = format!("{} {}\nRun task?",
+						match task.is_update_task() {
+							true => match opt.download { true => "Download", false => "Upload" },
+							false => "Backup"
+						},
+						task.get_description());
+					if get_yn(&prompt, true) {
+					}
+				}
 			},
 			Err(err) => {
 				match err.as_str() {

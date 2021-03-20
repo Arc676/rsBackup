@@ -19,7 +19,7 @@ use std::path::PathBuf;
 pub struct Task {
 	id: String,
 	is_update: bool,
-	always_ask: bool,
+	always_confirm: bool,
 	src: Option<PathBuf>,
 	dst: Option<PathBuf>,
 	backup_path: Option<PathBuf>,
@@ -34,19 +34,37 @@ pub struct Task {
 impl Task {
 	fn new() -> Self {
 		Task {
-			id: String::from("New Task"), is_update: true, always_ask: false,
+			id: String::from("New Task"), is_update: true, always_confirm: false,
 			src: None, dst: None, backup_path: None, compare_paths: false,
 			link_dest: Vec::new(), compare_dest: Vec::new(),
 			exclude_from: None, include_from: None, files_from: None
 		}
 	}
 
+	pub fn should_confirm(&self) -> bool {
+		self.always_confirm
+	}
+
+	pub fn is_update_task(&self) -> bool {
+		self.is_update
+	}
+
+	pub fn get_id(&self) -> &str {
+		self.id.as_str()
+	}
+
+	pub fn get_description(&self) -> String {
+		format!("{} -> {}",
+			self.src.as_ref().map_or("", |p| p.to_str().unwrap_or("")),
+			self.dst.as_ref().map_or("", |p| p.to_str().unwrap_or("")))
+	}
+
 	pub fn from_reader(reader: &mut impl BufRead) -> Result<Self, String> {
 		let mut task = Task::new();
 		let mut type_determined = false;
 		loop {
-			let mut line = String::new();
-			match reader.read_line(&mut line) {
+			let mut line1 = String::new();
+			match reader.read_line(&mut line1) {
 				Ok(len) => {
 					if len == 0 {
 						return Err(String::from("EOF"));
@@ -56,11 +74,12 @@ impl Task {
 					return Err(err.to_string());
 				}
 			}
-			if line.starts_with("#") {
+			if line1.starts_with("#") {
 				continue;
 			}
+			let line = line1.trim();
 			if !type_determined {
-				match line.as_str() {
+				match line {
 					"[BACKUP]" => { task.is_update = false },
 					"[UPDATE]" => {},
 					_ => {
@@ -68,8 +87,9 @@ impl Task {
 					}
 				};
 				type_determined = true;
+				continue;
 			}
-			if line.as_str() == "[END]" {
+			if line == "[END]" {
 				break;
 			}
 			if let Some(path) = line.strip_prefix("SRC=") {
@@ -88,9 +108,11 @@ impl Task {
 				} else {
 					task.backup_path = Some(PathBuf::from(path));
 				}
+			} else if let Some(name) = line.strip_prefix("ID=") {
+				task.id = name.to_string();
 			} else {
-				match line.as_str() {
-					"[CONFIRM]" => { task.always_ask = true; },
+				match line {
+					"[CONFIRM]" => { task.always_confirm = true; },
 					"[COMPARE BPATH]" => {
 						if task.is_update {
 							return Err(String::from("Unexpected [COMPARE BPATH] tag in update task configuration."));
