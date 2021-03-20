@@ -13,15 +13,17 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 use std::vec::Vec;
-use std::io::{BufRead, Result, Error};
+use std::io::BufRead;
 use std::path::PathBuf;
 
 pub struct Task {
 	id: String,
 	is_update: bool,
+	always_ask: bool,
 	src: Option<PathBuf>,
 	dst: Option<PathBuf>,
 	backup_path: Option<PathBuf>,
+	compare_paths: bool,
 	link_dest: Vec<PathBuf>,
 	compare_dest: Vec<PathBuf>,
 	exclude_from: Option<PathBuf>,
@@ -32,19 +34,80 @@ pub struct Task {
 impl Task {
 	fn new() -> Self {
 		Task {
-			id: String::from("New Task"), is_update: true,
-			src: None, dst: None, backup_path: None,
+			id: String::from("New Task"), is_update: true, always_ask: false,
+			src: None, dst: None, backup_path: None, compare_paths: false,
 			link_dest: Vec::new(), compare_dest: Vec::new(),
 			exclude_from: None, include_from: None, files_from: None
 		}
 	}
 
-	fn from_reader(mut reader: impl BufRead) -> Result<Self> {
+	fn from_reader(mut reader: impl BufRead) -> Result<Self, String> {
 		let mut task = Task::new();
-		for line in reader.lines() {
-			if let Err(err) = line {
-				return Err(err);
+		let mut typeDetermined = false;
+		for line_res in reader.lines() {
+			if let Err(err) = line_res {
+				return Err(err.to_string());
 			}
+			let line = line_res.unwrap();
+			if line.starts_with("#") {
+				continue;
+			}
+			if !typeDetermined {
+				match line.as_str() {
+					"[BACKUP]" => { task.is_update = false },
+					"[UPDATE]" => {},
+					_ => {
+						return Err(String::from("Failed to parse configuration file. Could not find task."));
+					}
+				};
+				typeDetermined = true;
+			}
+			if line.as_str() == "[END]" {
+				break;
+			}
+			if let Some(path) = line.strip_prefix("SRC=") {
+				task.src = Some(PathBuf::from(path));
+			} else if let Some(path) = line.strip_prefix("DST=") {
+				task.dst = Some(PathBuf::from(path));
+			} else if let Some(path) = line.strip_prefix("EXFR=") {
+				task.exclude_from = Some(PathBuf::from(path));
+			} else if let Some(path) = line.strip_prefix("INFR=") {
+				task.include_from = Some(PathBuf::from(path));
+			} else if let Some(path) = line.strip_prefix("FIFR=") {
+				task.files_from = Some(PathBuf::from(path));
+			} else if let Some(path) = line.strip_prefix("BPATH=") {
+				if task.is_update {
+					return Err(String::from("Unexpected BPATH parameter in update task configuration."));
+				} else {
+					task.backup_path = Some(PathBuf::from(path));
+				}
+			} else {
+				match line.as_str() {
+					"[CONFIRM]" => { task.always_ask = true; },
+					"[COMPARE BPATH]" => {
+						if task.is_update {
+							return Err(String::from("Unexpected [COMPARE BPATH] tag in update task configuration."));
+						} else {
+							task.compare_paths = true;
+						}
+					},
+					_ => {
+						return Err(format!("Unexpected line '{}' in configuration.", line));
+					}
+				};
+			}
+		}
+		if task.src.is_none() {
+			return Err(String::from("No source path specified."));
+		}
+		if !task.src.as_ref().unwrap().exists() {
+			return Err(String::from("Source path nonexistent or inaccessible."));
+		}
+		if task.dst.is_none() {
+			return Err(String::from("No destination path specified."));
+		}
+		if !task.dst.as_ref().unwrap().exists() {
+			return Err(String::from("Destination path nonexistent or inaccessible."));
 		}
 		Ok(task)
 	}
