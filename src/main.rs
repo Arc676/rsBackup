@@ -91,8 +91,23 @@ fn run_backup(opt: &Options) -> bool {
 		operation_failed(&why.to_string(), true);
 		return false;
 	}
-	let mut config = result.unwrap();
+	let config = result.unwrap();
 	let mut config_reader = BufReader::new(config);
+	loop {
+		match task::Task::from_reader(&mut config_reader) {
+			Ok(task) => {
+			},
+			Err(err) => {
+				match err.as_str() {
+					"EOF" => { break },
+					_ => {
+						println!("{}", err);
+						return false;
+					}
+				}
+			}
+		}
+	}
 	true
 }
 

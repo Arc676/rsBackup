@@ -41,18 +41,25 @@ impl Task {
 		}
 	}
 
-	fn from_reader(mut reader: impl BufRead) -> Result<Self, String> {
+	pub fn from_reader(reader: &mut impl BufRead) -> Result<Self, String> {
 		let mut task = Task::new();
-		let mut typeDetermined = false;
-		for line_res in reader.lines() {
-			if let Err(err) = line_res {
-				return Err(err.to_string());
+		let mut type_determined = false;
+		loop {
+			let mut line = String::new();
+			match reader.read_line(&mut line) {
+				Ok(len) => {
+					if len == 0 {
+						return Err(String::from("EOF"));
+					}
+				},
+				Err(err) => {
+					return Err(err.to_string());
+				}
 			}
-			let line = line_res.unwrap();
 			if line.starts_with("#") {
 				continue;
 			}
-			if !typeDetermined {
+			if !type_determined {
 				match line.as_str() {
 					"[BACKUP]" => { task.is_update = false },
 					"[UPDATE]" => {},
@@ -60,7 +67,7 @@ impl Task {
 						return Err(String::from("Failed to parse configuration file. Could not find task."));
 					}
 				};
-				typeDetermined = true;
+				type_determined = true;
 			}
 			if line.as_str() == "[END]" {
 				break;
@@ -96,6 +103,9 @@ impl Task {
 					}
 				};
 			}
+		}
+		if !type_determined {
+			return Err(String::from("EOF"));
 		}
 		match task.src {
 			Some(ref path) => {
