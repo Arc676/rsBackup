@@ -23,6 +23,8 @@ use std::path::Path;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
+mod task;
+
 #[derive(Debug, StructOpt)]
 #[structopt(name = "rsbackup", about = "rsync backup utility written in Rust")]
 struct Options {
