@@ -15,6 +15,10 @@
 use std::vec::Vec;
 use std::io::BufRead;
 use std::path::PathBuf;
+use std::process::Command;
+use std::result::Result;
+
+use chrono::Utc;
 
 pub struct Task {
 	id: String,
@@ -31,6 +35,22 @@ pub struct Task {
 	files_from: Option<PathBuf>
 }
 
+trait ToString {
+	fn to_string(self) -> String;
+}
+
+impl ToString for &Option<PathBuf> {
+	fn to_string(self) -> String {
+		self.as_ref().map_or("", |p| p.to_str().unwrap_or("")).to_string()
+	}
+}
+
+impl ToString for &PathBuf {
+	fn to_string(self) -> String {
+		AsRef::<std::path::Path>::as_ref(&self.as_path()).to_str().unwrap_or("").to_string()
+	}
+}
+
 impl Task {
 	fn new() -> Self {
 		Task {
@@ -38,6 +58,52 @@ impl Task {
 			src: None, dst: None, backup_path: None, compare_paths: false,
 			link_dest: Vec::new(), compare_dest: Vec::new(),
 			exclude_from: None, include_from: None, files_from: None
+		}
+	}
+
+	pub fn run_task(&self, quiet: bool, debug: bool) -> Result<(), String> {
+		let mut args = vec![String::from("--exclude"), String::from(".*")];
+		args.push(String::from(match self.is_update {
+			true => "-ru",
+			false => "-rt"
+		}));
+		if !quiet {
+			args.push(String::from("-h"));
+			args.push(String::from("--progress"));
+			args.push(String::from("--verbose"));
+		}
+		if let Some(path) = &self.files_from {
+			args.push(format!("--files-from={}", path.to_string()));
+		}
+		if let Some(path) = &self.exclude_from {
+			args.push(format!("--exclude-from={}", path.to_string()));
+		}
+		if let Some(path) = &self.include_from {
+			args.push(format!("--include-from={}", path.to_string()));
+		}
+		args.push(self.src.to_string());
+		if self.is_update {
+			args.push(self.dst.to_string());
+		} else {
+			args.push(format!("{}/{}", self.dst.to_string(), Utc::now().format("%Y-%m-%d--%H_%M")));
+		}
+		if debug {
+			println!("DEBUG: rsync {}", args.join(" "));
+			return Ok(());
+		}
+		let mut cmd = Command::new("rsync");
+		match cmd.args(args).spawn() {
+			Ok(mut child) => match child.wait() {
+				Ok(status) => match status.success() {
+					true => Ok(()),
+					false => Err(format!("rsync failed with exit code {}", match status.code() {
+						Some(code) => format!("{}", code),
+						None => String::from("(?)")
+					}))
+				},
+				Err(why) => Err(format!("Failed to run rsync: {}", why))
+			},
+			Err(why) => Err(format!("Failed to run rsync: {}", why))
 		}
 	}
 
@@ -74,7 +140,7 @@ impl Task {
 					return Err(err.to_string());
 				}
 			}
-			if line1.starts_with("#") {
+			if line1.starts_with("#") || line1.len() == 1 {
 				continue;
 			}
 			let line = line1.trim();
@@ -132,7 +198,7 @@ impl Task {
 		match task.src {
 			Some(ref path) => {
 				if !path.exists() {
-					return Err(String::from("Source path nonexistent or inaccessible."));
+					return Err(format!("Source path {} nonexistent or inaccessible.", path.to_string()));
 				}
 			},
 			None => {
@@ -142,7 +208,7 @@ impl Task {
 		match task.dst {
 			Some(ref path) => {
 				if !path.exists() {
-					return Err(String::from("Destination path nonexistent or inaccessible."));
+					return Err(format!("Destination path {} nonexistent or inaccessible.", path.to_string()));
 				}
 			},
 			None => {

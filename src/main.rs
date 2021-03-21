@@ -106,6 +106,9 @@ fn run_backup(opt: &Options) -> bool {
 				if task.is_update_task() {
 					println!("Found update task.");
 				} else {
+					if opt.up_only {
+						continue;
+					}
 					println!("Found backup task.");
 				}
 				if opt.id_tasks {
@@ -118,7 +121,14 @@ fn run_backup(opt: &Options) -> bool {
 							false => "Backup"
 						},
 						task.get_description());
-					if get_yn(&prompt, true) {
+					if !get_yn(&prompt, true) {
+						continue;
+					}
+				}
+				if let Err(why) = task.run_task(opt.quiet, opt.debug) {
+					let err = format!("Backup failed: {}", why);
+					if operation_failed(&err, opt.quit_on_fail) {
+						break;
 					}
 				}
 			},
@@ -126,13 +136,14 @@ fn run_backup(opt: &Options) -> bool {
 				match err.as_str() {
 					"EOF" => { break },
 					_ => {
-						println!("{}", err);
+						println!("Failed to construct task: {}", err);
 						return false;
 					}
 				}
 			}
 		}
 	}
+	println!("Backup complete.");
 	true
 }
 
