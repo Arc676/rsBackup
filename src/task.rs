@@ -61,7 +61,7 @@ impl Task {
 		}
 	}
 
-	pub fn run_task(&self, quiet: bool, debug: bool) -> Result<(), String> {
+	pub fn run_task(&self, quiet: bool, debug: bool, dry_run: bool) -> Result<(), String> {
 		let mut args = vec![String::from("--exclude"), String::from(".*")];
 		args.push(String::from(match self.is_update {
 			true => "-ru",
@@ -80,6 +80,9 @@ impl Task {
 		}
 		if let Some(path) = &self.include_from {
 			args.push(format!("--include-from={}", path.to_string()));
+		}
+		if dry_run {
+			args.push(String::from("--dry-run"));
 		}
 		args.push(self.src.to_string());
 		if self.is_update {

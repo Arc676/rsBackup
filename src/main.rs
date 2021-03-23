@@ -32,13 +32,13 @@ struct Options {
 	config: Option<PathBuf>,
 
 	#[structopt(long)]
-	always_confirm: bool,
-
-	#[structopt(long)]
 	ask: bool,
 
 	#[structopt(long)]
 	debug: bool,
+
+	#[structopt(long)]
+	dry_run: bool,
 
 	#[structopt(long)]
 	link: bool,
@@ -114,7 +114,7 @@ fn run_backup(opt: &Options) -> bool {
 				if opt.id_tasks {
 					println!("Task ID: {}", task.get_id());
 				}
-				if opt.always_confirm || task.should_confirm() {
+				if opt.ask || task.should_confirm() {
 					let prompt = format!("{} {}\nRun task?",
 						match task.is_update_task() {
 							true => match opt.download { true => "Download", false => "Upload" },
@@ -125,7 +125,7 @@ fn run_backup(opt: &Options) -> bool {
 						continue;
 					}
 				}
-				if let Err(why) = task.run_task(opt.quiet, opt.debug) {
+				if let Err(why) = task.run_task(opt.quiet, opt.debug, opt.dry_run) {
 					let err = format!("Backup failed: {}", why);
 					if operation_failed(&err, opt.quit_on_fail) {
 						break;
