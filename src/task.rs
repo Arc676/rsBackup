@@ -19,6 +19,7 @@ use std::process::Command;
 use std::result::Result;
 
 use chrono::Utc;
+use std::fs;
 
 pub struct Task {
 	id: String,
@@ -80,6 +81,29 @@ impl Task {
 		}
 		if let Some(path) = &self.include_from {
 			args.push(format!("--include-from={}", path.to_string()));
+		}
+		for path in &self.link_dest {
+			args.push(format!("--link-dest={}", path.to_string()));
+		}
+		for path in &self.compare_dest {
+			args.push(format!("--compare-dest={}", path.to_string()));
+		}
+		if self.compare_paths {
+			let path = self.backup_path.as_ref().unwrap().as_path();
+			match fs::read_dir(path) {
+				Ok(iterator) => {
+					for entry in iterator {
+						if let Ok(dir) = entry {
+							if dir.path().is_dir() {
+								args.push(format!("--compare-dest={}", dir.path().to_string()));
+							}
+						}
+					}
+				},
+				Err(why) => {
+					return Err(format!("Failed to read backup directory: {}", why));
+				}
+			};
 		}
 		if dry_run {
 			args.push(String::from("--dry-run"));
@@ -177,6 +201,10 @@ impl Task {
 				} else {
 					task.backup_path = Some(PathBuf::from(path));
 				}
+			} else if let Some(path) = line.strip_prefix("CDST=") {
+				task.compare_dest.push(PathBuf::from(path));
+			} else if let Some(path) = line.strip_prefix("LDST=") {
+				task.link_dest.push(PathBuf::from(path));
 			} else if let Some(name) = line.strip_prefix("ID=") {
 				task.id = name.to_string();
 			} else {
@@ -197,6 +225,9 @@ impl Task {
 		}
 		if !type_determined {
 			return Err(String::from("EOF"));
+		}
+		if task.compare_paths && task.backup_path.is_none() {
+			return Err(String::from("[COMPARE BPATH] specified but no backup path given."));
 		}
 		match task.src {
 			Some(ref path) => {
