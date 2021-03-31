@@ -15,18 +15,11 @@
 use imgui::*;
 
 mod support;
+mod config;
+mod state;
 
-struct State {
-	filename: ImString
-}
-
-impl Default for State {
-	fn default() -> Self {
-		State {
-			filename: ImString::with_capacity(100)
-		}
-	}
-}
+use config::TaskConfig;
+use state::State;
 
 fn build_window(ui: &Ui, state: &mut State) {
 	Window::new(im_str!("rsBackup Configuration Editor"))
