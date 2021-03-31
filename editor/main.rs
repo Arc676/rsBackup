@@ -16,25 +16,36 @@ use imgui::*;
 
 mod support;
 
-fn main() {
-	let system = support::init(file!());
-	let window_title = if cfg!(all(feature = "directx", windows)) {
-		im_str!("Hello world (OpenGL)")
-	} else {
-		im_str!("Hello world (DirectX)")
-	};
+struct State {
+	filename: ImString
+}
 
-	system.main_loop(move |_, ui| {
-		Window::new(im_str!("rsBackup Configuration Editor"))
-			.size([300.0, 110.0], Condition::FirstUseEver)
-			.build(ui, || {
-				ui.text(im_str!("Hello world!"));
-				ui.separator();
-				let mouse_pos = ui.io().mouse_pos;
-				ui.text(format!(
-					"Mouse Position: ({:.1},{:.1})",
-					mouse_pos[0], mouse_pos[1]
-				));
-			});
-	});
+impl Default for State {
+	fn default() -> Self {
+		State {
+			filename: ImString::with_capacity(100)
+		}
+	}
+}
+
+fn build_window(ui: &Ui, state: &mut State) {
+	Window::new(im_str!("rsBackup Configuration Editor"))
+		.size([300.0, 110.0], Condition::FirstUseEver)
+		.build(&ui, || {
+			ui.text(im_str!("Filename:"));
+			ui.same_line(0.0);
+			ui.input_text(im_str!("##Filename"), &mut state.filename)
+				.build();
+			if ui.button(im_str!("Load"), [0.0,0.0]) {
+			}
+			ui.same_line(0.0);
+			if ui.button(im_str!("Save"), [0.0,0.0]) {
+			}
+		});
+}
+
+fn main() {
+	let mut state = State::default();
+	let system = support::init(file!());
+	system.main_loop(move |_, ui| build_window(ui, &mut state));
 }
