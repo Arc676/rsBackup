@@ -21,10 +21,39 @@ mod state;
 use config::TaskConfig;
 use state::State;
 
+fn task_editor(ui: &Ui, cfg: &mut TaskConfig) -> bool {
+	ui.button(im_str!("Save Task"), [0.0,0.0])
+}
+
+enum TaskButtons {
+	NoButton,
+	RemoveTask,
+	EditTask
+}
+
+fn show_task(ui: &Ui, cfg: &TaskConfig) -> TaskButtons {
+	TaskButtons::NoButton
+}
+
 fn build_window(ui: &Ui, state: &mut State) {
+	let mut editing = TaskConfig::default();
 	Window::new(im_str!("rsBackup Configuration Editor"))
 		.size([300.0, 110.0], Condition::FirstUseEver)
 		.build(&ui, || {
+			// Editor
+			if task_editor(ui, &mut editing) {
+				state.add_task(editing);
+				editing = TaskConfig::default();
+			}
+
+			// Show existing tasks
+			for task in state.tasks_iter() {
+				match show_task(ui, task) {
+					_ => {}
+				};
+			}
+
+			// Disk I/O
 			ui.text(im_str!("Filename:"));
 			ui.same_line(0.0);
 			ui.input_text(im_str!("##Filename"), &mut state.filename)
