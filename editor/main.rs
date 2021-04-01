@@ -50,17 +50,15 @@ fn task_editor(ui: &Ui, cfg: &mut TaskConfig) -> bool {
 		.build();
 	ui.checkbox(im_str!("Compare with old backups"), &mut cfg.compare_paths);
 
-	let mut il = 0;
 	let mut rl = None;
 	ui.text("Linked destinations");
-	for mut path in cfg.link_dest.iter_mut() {
+	for (il, mut path) in cfg.link_dest.iter_mut().enumerate() {
 		ui.input_text(&ImString::new(format!("##Link{}", il)), &mut path)
 			.build();
 		ui.same_line(0.0);
 		if ui.button(&ImString::new(format!("Remove##RLink{}", il)), [0.0,0.0]) {
 			rl = Some(il);
 		}
-		il += 1;
 	}
 	if let Some(idx) = rl {
 		cfg.link_dest.remove(idx);
@@ -69,17 +67,15 @@ fn task_editor(ui: &Ui, cfg: &mut TaskConfig) -> bool {
 		cfg.link_dest.push(ImString::with_capacity(255));
 	}
 
-	let mut ic = 0;
 	let mut rc = None;
 	ui.text("Compared destinations");
-	for mut path in cfg.compare_dest.iter_mut() {
+	for (ic, mut path) in cfg.compare_dest.iter_mut().enumerate() {
 		ui.input_text(&ImString::new(format!("##Comp{}", ic)), &mut path)
 			.build();
 		ui.same_line(0.0);
 		if ui.button(&ImString::new(format!("Remove##RComp{}", ic)), [0.0,0.0]) {
 			rc = Some(ic);
 		}
-		ic += 1;
 	}
 	if let Some(idx) = rc {
 		cfg.compare_dest.remove(idx);
@@ -119,7 +115,6 @@ fn show_task(ui: &Ui, cfg: &TaskConfig) -> TaskButtons {
 	} else {
 		ui.text("Backup task");
 	}
-	ui.text(format!("ID: {}", cfg.id));
 	if cfg.always_confirm {
 		ui.text("Always asks for confirmation");
 	}
@@ -169,15 +164,25 @@ fn build_window(ui: &Ui, state: &mut State) {
 		.size([500.0, 700.0], Condition::FirstUseEver)
 		.build(&ui, || {
 			// Editor
-			if task_editor(ui, &mut state.editing) {
-				state.save_edited_task();
+			if CollapsingHeader::new(im_str!("Task Editor")).build(&ui) {
+				if task_editor(ui, &mut state.editing) {
+					state.save_edited_task();
+				}
 			}
 
 			// Show existing tasks
-			for task in state.tasks_iter() {
-				match show_task(ui, task) {
-					_ => {}
-				};
+			if CollapsingHeader::new(im_str!("Saved Tasks")).build(&ui) {
+				for (i, task) in state.tasks_iter().enumerate() {
+					let name = match task.id.is_empty() {
+						true => format!("Task {}", i + 1),
+						false => format!("{}", task.id)
+					};
+					TreeNode::new(&ImString::new(name)).build(&ui, || {
+						match show_task(ui, task) {
+							_ => {}
+						};
+					});
+				}
 			}
 
 			// Disk I/O
