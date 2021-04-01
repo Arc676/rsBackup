@@ -172,16 +172,25 @@ fn build_window(ui: &Ui, state: &mut State) {
 
 			// Show existing tasks
 			if CollapsingHeader::new(im_str!("Saved Tasks")).build(&ui) {
+				let mut action = None;
 				for (i, task) in state.tasks_iter().enumerate() {
 					let name = match task.id.is_empty() {
 						true => format!("Task {}", i + 1),
 						false => format!("{}", task.id)
 					};
 					TreeNode::new(&ImString::new(name)).build(&ui, || {
-						match show_task(ui, task) {
-							_ => {}
+						let res = show_task(ui, task);
+						match res {
+							TaskButtons::NoButton => {},
+							_ => { action = Some((i, res)); }
 						};
 					});
+				}
+				if let Some((idx, act)) = action {
+					match act {
+						TaskButtons::RemoveTask => { state.remove_task_at(idx); }
+						_ => { state.edit_task_at(idx); }
+					};
 				}
 			}
 

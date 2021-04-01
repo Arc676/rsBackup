@@ -43,4 +43,12 @@ impl State {
 		let task = std::mem::replace(&mut self.editing, TaskConfig::default());
 		self.tasks.push(task);
 	}
+
+	pub fn remove_task_at(&mut self, idx: usize) {
+		self.tasks.remove(idx);
+	}
+
+	pub fn edit_task_at(&mut self, idx: usize) {
+		self.editing = self.tasks.remove(idx);
+	}
 }
