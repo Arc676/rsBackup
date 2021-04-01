@@ -22,6 +22,71 @@ use config::TaskConfig;
 use state::State;
 
 fn task_editor(ui: &Ui, cfg: &mut TaskConfig) -> bool {
+	// Task type
+	ui.radio_button(im_str!("Update task"), &mut cfg.is_update, true);
+	ui.same_line(0.0);
+	ui.radio_button(im_str!("Backup task"), &mut cfg.is_update, false);
+
+	ui.text("Task ID:");
+	ui.same_line(0.0);
+	ui.input_text(im_str!("##ID"), &mut cfg.id)
+		.build();
+
+	ui.checkbox(im_str!("Always ask for confirmation"), &mut cfg.always_confirm);
+
+	ui.text("Source path:");
+	ui.same_line(0.0);
+	ui.input_text(im_str!("##SRC"), &mut cfg.src)
+		.build();
+
+	ui.text("Destination path:");
+	ui.same_line(0.0);
+	ui.input_text(im_str!("##DST"), &mut cfg.dst)
+		.build();
+
+	ui.text("Backup path:");
+	ui.same_line(0.0);
+	ui.input_text(im_str!("##BackupPath"), &mut cfg.backup_path)
+		.build();
+	ui.checkbox(im_str!("Compare with old backups"), &mut cfg.compare_paths);
+
+	let mut il = 0;
+	ui.text("Linked destinations");
+	for mut path in cfg.link_dest.iter_mut() {
+		ui.input_text(&ImString::new(format!("##Link{}", il)), &mut path)
+			.build();
+		il += 1;
+	}
+	if ui.button(im_str!("Add path##LinkDest"), [0.0,0.0]) {
+		cfg.link_dest.push(ImString::with_capacity(255));
+	}
+
+	let mut ic = 0;
+	ui.text("Compared destinations");
+	for mut path in cfg.compare_dest.iter_mut() {
+		ui.input_text(&ImString::new(format!("##Comp{}", ic)), &mut path)
+			.build();
+		ic += 1;
+	}
+	if ui.button(im_str!("Add path##CompDest"), [0.0,0.0]) {
+		cfg.compare_dest.push(ImString::with_capacity(255));
+	}
+
+	ui.text("Include from:");
+	ui.same_line(0.0);
+	ui.input_text(im_str!("##IncludeFrom"), &mut cfg.include_from)
+		.build();
+
+	ui.text("Exclude from:");
+	ui.same_line(0.0);
+	ui.input_text(im_str!("##ExcludeFrom"), &mut cfg.exclude_from)
+		.build();
+
+	ui.text("Files from:");
+	ui.same_line(0.0);
+	ui.input_text(im_str!("##FilesFrom"), &mut cfg.files_from)
+		.build();
+
 	ui.button(im_str!("Save Task"), [0.0,0.0])
 }
 
