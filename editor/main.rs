@@ -32,7 +32,55 @@ enum TaskButtons {
 }
 
 fn show_task(ui: &Ui, cfg: &TaskConfig) -> TaskButtons {
-	TaskButtons::NoButton
+	let mut ret = TaskButtons::NoButton;
+	if cfg.is_update {
+		ui.text("Update task");
+	} else {
+		ui.text("Backup task");
+	}
+	ui.text(format!("ID: {}", cfg.id));
+	if cfg.always_confirm {
+		ui.text("Always asks for confirmation");
+	}
+
+	ui.text(format!("Source: {}", cfg.src));
+	ui.text(format!("Destination: {}", cfg.dst));
+
+	if !cfg.is_update {
+		ui.text(format!("Backups: {}", cfg.backup_path));
+		if cfg.compare_paths {
+			ui.text("Compares with all other backups");
+		}
+	}
+
+	ui.text("Links:");
+	for path in &cfg.link_dest {
+		ui.bullet_text(&path);
+	}
+
+	ui.text("Compared paths:");
+	for path in &cfg.compare_dest {
+		ui.bullet_text(&path);
+	}
+
+	if !cfg.exclude_from.is_empty() {
+		ui.text(format!("Exclude patterns: {}", cfg.exclude_from));
+	}
+	if !cfg.include_from.is_empty() {
+		ui.text(format!("Include patterns: {}", cfg.include_from));
+	}
+	if !cfg.files_from.is_empty() {
+		ui.text(format!("Filename patterns: {}", cfg.files_from));
+	}
+
+	if ui.button(im_str!("Edit task"), [0.0,0.0]) {
+		ret = TaskButtons::EditTask;
+	}
+	ui.same_line(0.0);
+	if ui.button(im_str!("Remove task"), [0.0,0.0]) {
+		ret = TaskButtons::RemoveTask;
+	}
+	ret
 }
 
 fn build_window(ui: &Ui, state: &mut State) {
@@ -54,7 +102,7 @@ fn build_window(ui: &Ui, state: &mut State) {
 			}
 
 			// Disk I/O
-			ui.text(im_str!("Filename:"));
+			ui.text("Filename:");
 			ui.same_line(0.0);
 			ui.input_text(im_str!("##Filename"), &mut state.filename)
 				.build();
