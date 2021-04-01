@@ -51,22 +51,38 @@ fn task_editor(ui: &Ui, cfg: &mut TaskConfig) -> bool {
 	ui.checkbox(im_str!("Compare with old backups"), &mut cfg.compare_paths);
 
 	let mut il = 0;
+	let mut rl = None;
 	ui.text("Linked destinations");
 	for mut path in cfg.link_dest.iter_mut() {
 		ui.input_text(&ImString::new(format!("##Link{}", il)), &mut path)
 			.build();
+		ui.same_line(0.0);
+		if ui.button(&ImString::new(format!("Remove##RLink{}", il)), [0.0,0.0]) {
+			rl = Some(il);
+		}
 		il += 1;
+	}
+	if let Some(idx) = rl {
+		cfg.link_dest.remove(idx);
 	}
 	if ui.button(im_str!("Add path##LinkDest"), [0.0,0.0]) {
 		cfg.link_dest.push(ImString::with_capacity(255));
 	}
 
 	let mut ic = 0;
+	let mut rc = None;
 	ui.text("Compared destinations");
 	for mut path in cfg.compare_dest.iter_mut() {
 		ui.input_text(&ImString::new(format!("##Comp{}", ic)), &mut path)
 			.build();
+		ui.same_line(0.0);
+		if ui.button(&ImString::new(format!("Remove##RComp{}", ic)), [0.0,0.0]) {
+			rc = Some(ic);
+		}
 		ic += 1;
+	}
+	if let Some(idx) = rc {
+		cfg.compare_dest.remove(idx);
 	}
 	if ui.button(im_str!("Add path##CompDest"), [0.0,0.0]) {
 		cfg.compare_dest.push(ImString::with_capacity(255));
@@ -149,14 +165,12 @@ fn show_task(ui: &Ui, cfg: &TaskConfig) -> TaskButtons {
 }
 
 fn build_window(ui: &Ui, state: &mut State) {
-	let mut editing = TaskConfig::default();
 	Window::new(im_str!("rsBackup Configuration Editor"))
-		.size([300.0, 110.0], Condition::FirstUseEver)
+		.size([500.0, 700.0], Condition::FirstUseEver)
 		.build(&ui, || {
 			// Editor
-			if task_editor(ui, &mut editing) {
-				state.add_task(editing);
-				editing = TaskConfig::default();
+			if task_editor(ui, &mut state.editing) {
+				state.save_edited_task();
 			}
 
 			// Show existing tasks

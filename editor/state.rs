@@ -20,6 +20,7 @@ use crate::TaskConfig;
 
 pub struct State {
 	pub filename: ImString,
+	pub editing: TaskConfig,
 	tasks: Vec<TaskConfig>
 }
 
@@ -27,6 +28,7 @@ impl Default for State {
 	fn default() -> Self {
 		State {
 			filename: ImString::with_capacity(100),
+			editing: TaskConfig::default(),
 			tasks: Vec::new()
 		}
 	}
@@ -37,7 +39,8 @@ impl State {
 		self.tasks.iter_mut()
 	}
 
-	pub fn add_task(&mut self, cfg: TaskConfig) {
-		self.tasks.push(cfg);
+	pub fn save_edited_task(&mut self) {
+		let task = std::mem::replace(&mut self.editing, TaskConfig::default());
+		self.tasks.push(task);
 	}
 }
