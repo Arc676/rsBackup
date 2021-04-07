@@ -40,8 +40,7 @@ impl State {
 	}
 
 	pub fn save_edited_task(&mut self) {
-		let task = std::mem::replace(&mut self.editing, TaskConfig::default());
-		self.tasks.push(task);
+		self.tasks.push(std::mem::take(&mut self.editing));
 	}
 
 	pub fn remove_task_at(&mut self, idx: usize) {
