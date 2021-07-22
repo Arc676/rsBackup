@@ -159,7 +159,7 @@ fn show_task(ui: &Ui, cfg: &TaskConfig) -> TaskButtons {
 	ret
 }
 
-fn build_window(ui: &Ui, state: &mut State) {
+fn build_window(run: &mut bool, ui: &Ui, state: &mut State) {
 	Window::new(im_str!("rsBackup Configuration Editor"))
 		.size([500.0, 700.0], Condition::FirstUseEver)
 		.build(&ui, || {
@@ -204,11 +204,15 @@ fn build_window(ui: &Ui, state: &mut State) {
 			ui.same_line(0.0);
 			if ui.button(im_str!("Save"), [0.0,0.0]) {
 			}
+
+			if ui.button(im_str!("Exit"), [0.0,0.0]) {
+				*run = false;
+			}
 		});
 }
 
 fn main() {
 	let mut state = State::default();
 	let system = support::init(file!());
-	system.main_loop(move |_, ui| build_window(ui, &mut state));
+	system.main_loop(move |run, ui| build_window(run, ui, &mut state));
 }
