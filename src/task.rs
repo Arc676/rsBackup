@@ -31,6 +31,7 @@ pub struct Task {
 	compare_paths: bool,
 	link_dest: Vec<PathBuf>,
 	compare_dest: Vec<PathBuf>,
+	exclude_others: bool,
 	exclude_from: Option<PathBuf>,
 	include_from: Option<PathBuf>,
 	files_from: Option<PathBuf>
@@ -58,7 +59,7 @@ impl Task {
 			id: String::from("New Task"), is_update: true, always_confirm: false,
 			src: None, dst: None, backup_path: None, compare_paths: false,
 			link_dest: Vec::new(), compare_dest: Vec::new(),
-			exclude_from: None, include_from: None, files_from: None
+			exclude_others: false, exclude_from: None, include_from: None, files_from: None
 		}
 	}
 
@@ -73,6 +74,7 @@ impl Task {
 			args.push(String::from("--progress"));
 			args.push(String::from("--verbose"));
 		}
+
 		if let Some(path) = &self.files_from {
 			args.push(format!("--files-from={}", path.to_string()));
 		}
@@ -82,6 +84,11 @@ impl Task {
 		if let Some(path) = &self.include_from {
 			args.push(format!("--include-from={}", path.to_string()));
 		}
+		if self.exclude_others {
+			args.push(String::from("--exclude"));
+			args.push(String::from("*"));
+		}
+
 		for path in &self.link_dest {
 			args.push(format!("--link-dest={}", path.to_string()));
 		}
@@ -209,6 +216,7 @@ impl Task {
 				task.id = name.to_string();
 			} else {
 				match line {
+					"[EXCLUDE OTHERS]" => { task.exclude_others = true; },
 					"[CONFIRM]" => { task.always_confirm = true; },
 					"[COMPARE BPATH]" => {
 						if task.is_update {
