@@ -75,9 +75,16 @@ impl ConfigEditor {
     }
 
     fn save_to_disk(&self) -> io::Result<()> {
-        for task in &self.tasks {
-            if !task.is_valid() {
-                return Err(Error::new(ErrorKind::InvalidData, task.id.clone()));
+        for (i, task) in self.tasks.iter().enumerate() {
+            if let Err(e) = task.validate() {
+                return Err(Error::new(ErrorKind::InvalidData,
+                                      format!("{}: {}",
+                                              if task.id.is_empty() {
+                                                  format!("(Task #{})", i + 1)
+                                              } else {
+                                                  task.id.clone()
+                                              },
+                                              e)));
             }
         }
         let mut file = File::create(&self.filename)?;
@@ -240,7 +247,13 @@ impl epi::App for ConfigEditor {
             } else {
                 let mut action = None;
                 for (i, task) in self.tasks.iter().enumerate() {
-                    ui.collapsing(&task.id, |ui| {
+                    let placeholder = format!("(Task #{})", i + 1);
+                    let header = if task.id.is_empty() {
+                        &placeholder
+                    } else {
+                        &task.id
+                    };
+                    ui.collapsing(header, |ui| {
                         match show_task(ui, task) {
                             Some(act) => action = Some((i, act)),
                             None => ()
@@ -286,12 +299,12 @@ impl epi::App for ConfigEditor {
             });
             if let Some(state) = &self.io_state {
                 match state {
-                    IOState::FileNotFound => ui.label("Err: file not found"),
+                    IOState::FileNotFound => ui.label("Err: File not found"),
                     IOState::IOError(err) => ui.label(format!("Err: {}", err)),
                     IOState::ConfigWritten => ui.label("Saved config file"),
                     IOState::ConfigRead => ui.label("Read config file"),
-                    IOState::InvalidTask(task) => ui.label(format!(
-                        "Err: Task {} is invalid", task))
+                    IOState::InvalidTask(e) => ui.label(format!(
+                        "Error in {}", e))
                 };
             }
             if ui.button("Exit").clicked() {

@@ -49,13 +49,14 @@ macro_rules! write_if_set {
 
 impl Display for TaskConfig {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "{}\nID={}\nSRC={}\nDST={}",
+        writeln!(f, "{}\nSRC={}\nDST={}",
                match self.is_update {
                    true => "[UPDATE]",
                    false => "[BACKUP]"
                },
-               self.id, self.src, self.dst
+               self.src, self.dst
         )?;
+        write_if_nonempty!(f, "ID", self.id);
         write_if_nonempty!(f, "EXFR", self.exclude_from);
         write_if_nonempty!(f, "INFR", self.include_from);
         write_if_nonempty!(f, "FIFR", self.files_from);
@@ -179,15 +180,24 @@ impl TaskConfig {
         Ok(task)
     }
 
-    pub fn is_valid(&self) -> bool {
-        if self.backup_path.is_empty() && self.compare_paths {
-            return false;
+    pub fn validate(&self) -> Result<(), &'static str> {
+        if self.src.is_empty() {
+            return Err("No source path specified");
+        }
+        if self.dst.is_empty() {
+            return Err("No destination path specified");
         }
         if self.is_update {
-            if self.compare_paths || !self.backup_path.is_empty() {
-                return false;
+            if self.compare_paths {
+                return Err("Update task can't compare with backups");
+            }
+            if !self.backup_path.is_empty() {
+                return Err("Update task can't have backup path");
             }
         }
-        true
+        if self.backup_path.is_empty() && self.compare_paths {
+            return Err("No backup path to compare to");
+        }
+        Ok(())
     }
 }
