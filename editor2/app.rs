@@ -1,65 +1,74 @@
-// Taken from public eframe template
-// https://github.com/emilk/eframe_template
+// Copyright (C) 2022 Arc676/Alessandro Vinciguerra <alesvinciguerra@gmail.com>
+// Based on public eframe template https://github.com/emilk/eframe_template
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation (version 3).
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 use eframe::{egui, epi};
 
+use crate::TaskConfig;
+
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[cfg_attr(feature = "persistence", derive(serde::Deserialize, serde::Serialize))]
-#[cfg_attr(feature = "persistence", serde(default))] // if we add new fields, give them default values when deserializing old state
-pub struct TemplateApp {
-    // Example stuff:
-    label: String,
+#[cfg_attr(feature = "persistence", serde(default))]
+pub struct ConfigEditor {
+    filename: String,
 
-    // this how you opt-out of serialization of a member
     #[cfg_attr(feature = "persistence", serde(skip))]
-    value: f32,
+    editing: TaskConfig,
+
+    #[cfg_attr(feature = "persistence", serde(skip))]
+    tasks: Vec<TaskConfig>
 }
 
-impl Default for TemplateApp {
+impl Default for ConfigEditor {
     fn default() -> Self {
         Self {
-            // Example stuff:
-            label: "Hello World!".to_owned(),
-            value: 2.7,
+            filename: String::new(),
+            editing: TaskConfig::default(),
+            tasks: Vec::new()
         }
     }
 }
 
-impl epi::App for TemplateApp {
+impl epi::App for ConfigEditor {
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::CtxRef, frame: &epi::Frame) {
-        let Self { label, value } = self;
-
-        // Examples of how to create different panels and windows.
-        // Pick whichever suits you.
-        // Tip: a good default choice is to just keep the `CentralPanel`.
-        // For inspiration and more examples, go to https://emilk.github.io/egui
-
-        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            // The top panel is often a good place for a menu bar:
-            egui::menu::bar(ui, |ui| {
-                ui.menu_button("File", |ui| {
-                    if ui.button("Quit").clicked() {
-                        frame.quit();
-                    }
-                });
-            });
-        });
-
         egui::SidePanel::left("side_panel").show(ctx, |ui| {
-            ui.heading("Side Panel");
-
-            ui.horizontal(|ui| {
-                ui.label("Write something: ");
-                ui.text_edit_singleline(label);
-            });
-
-            ui.add(egui::Slider::new(value, 0.0..=10.0).text("value"));
-            if ui.button("Increment").clicked() {
-                *value += 1.0;
+            ui.heading("Saved Tasks");
+            if self.tasks.len() == 0 {
+                ui.label("No tasks yet");
             }
 
+            ui.heading("Disk");
+
+            ui.horizontal(|ui| {
+                ui.label("Filename: ");
+                ui.text_edit_singleline(&mut self.filename);
+            });
+            ui.horizontal(|ui| {
+                if ui.button("Load").clicked() {
+                    // load config
+                }
+                if ui.button("Save").clicked() {
+                    // save config
+                }
+            });
+            if ui.button("Exit").clicked() {
+                frame.quit();
+            }
+
+            // egui/eframe attribution links
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
                 ui.horizontal(|ui| {
                     ui.spacing_mut().item_spacing.x = 0.0;
@@ -72,25 +81,8 @@ impl epi::App for TemplateApp {
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            // The central panel the region left after adding TopPanel's and SidePanel's
-
-            ui.heading("eframe template");
-            ui.hyperlink("https://github.com/emilk/eframe_template");
-            ui.add(egui::github_link_file!(
-                "https://github.com/emilk/eframe_template/blob/master/",
-                "Source code."
-            ));
-            egui::warn_if_debug_build(ui);
+            ui.heading("Task Editor");
         });
-
-        if false {
-            egui::Window::new("Window").show(ctx, |ui| {
-                ui.label("Windows can be moved by dragging them.");
-                ui.label("They are automatically sized based on contents.");
-                ui.label("You can turn on resizing and scrolling if you like.");
-                ui.label("You would normally chose either panels OR windows.");
-            });
-        }
     }
 
     /// Called once before the first frame.
@@ -116,6 +108,6 @@ impl epi::App for TemplateApp {
     }
 
     fn name(&self) -> &str {
-        "eframe template"
+        "rsBackup Configuration Editor"
     }
 }
