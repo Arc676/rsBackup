@@ -63,6 +63,11 @@ impl ConfigEditor {
     }
 
     fn save_to_disk(&self) -> io::Result<()> {
+        for task in &self.tasks {
+            if !task.is_valid() {
+                return Err(Error::new(ErrorKind::InvalidData, task.id.clone()));
+            }
+        }
         let mut file = File::create(&self.filename)?;
         for task in &self.tasks {
             file.write(task.to_string().as_ref())?;
@@ -71,17 +76,19 @@ impl ConfigEditor {
     }
 
     fn load_from_disk(&mut self) -> io::Result<()> {
+        let mut new_tasks = Vec::new();
         let file = File::open(&self.filename)?;
         let mut reader = BufReader::new(file);
         loop {
             match TaskConfig::from_reader(&mut reader) {
-                Ok(task) => self.tasks.push(task),
+                Ok(task) => new_tasks.push(task),
                 Err(err) => match err.as_str() {
                     "EOF" => break,
                     _ => ()
                 }
             }
         }
+        self.tasks = new_tasks;
         Ok(())
     }
 }

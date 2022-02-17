@@ -12,7 +12,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-use std::fmt::{Display, Error, Formatter};
+use std::fmt::{Display, Formatter};
 use std::io::BufRead;
 
 pub struct TaskConfig {
@@ -59,9 +59,6 @@ impl Display for TaskConfig {
         write_if_nonempty!(f, "EXFR", self.exclude_from);
         write_if_nonempty!(f, "INFR", self.include_from);
         write_if_nonempty!(f, "FIFR", self.files_from);
-        if self.backup_path.is_empty() && self.compare_paths {
-            return Err(Error::default());
-        }
         write_if_nonempty!(f, "BPATH", self.backup_path);
         for path in &self.compare_dest {
             writeln!(f, "CDST={}", path)?;
@@ -180,5 +177,17 @@ impl TaskConfig {
             ));
         }
         Ok(task)
+    }
+
+    pub fn is_valid(&self) -> bool {
+        if self.backup_path.is_empty() && self.compare_paths {
+            return false;
+        }
+        if self.is_update {
+            if self.compare_paths || !self.backup_path.is_empty() {
+                return false;
+            }
+        }
+        true
     }
 }
