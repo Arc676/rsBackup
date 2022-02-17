@@ -22,7 +22,6 @@ use eframe::egui::{Separator, Ui, WidgetText};
 use crate::TaskConfig;
 
 enum TaskButtons {
-    NoButton,
     RemoveTask,
     EditTask,
 }
@@ -87,8 +86,8 @@ impl ConfigEditor {
     }
 }
 
-fn show_task(ui: &mut Ui, cfg: &TaskConfig) -> TaskButtons {
-    let mut ret = TaskButtons::NoButton;
+fn show_task(ui: &mut Ui, cfg: &TaskConfig) -> Option<TaskButtons> {
+    let mut ret = None;
     if cfg.is_update {
         ui.label("Update task");
     } else {
@@ -134,10 +133,10 @@ fn show_task(ui: &mut Ui, cfg: &TaskConfig) -> TaskButtons {
 
     ui.horizontal(|ui| {
         if ui.button("Edit task").clicked() {
-            ret = TaskButtons::EditTask;
+            ret = Some(TaskButtons::EditTask);
         }
         if ui.button("Remove task").clicked() {
-            ret = TaskButtons::RemoveTask;
+            ret = Some(TaskButtons::RemoveTask);
         }
     });
     ret
@@ -224,15 +223,15 @@ impl epi::App for ConfigEditor {
                 for (i, task) in self.tasks.iter().enumerate() {
                     ui.collapsing(&task.id, |ui| {
                         match show_task(ui, task) {
-                            TaskButtons::NoButton => (),
-                            res => action = Some((i, res))
+                            Some(act) => action = Some((i, act)),
+                            None => ()
                         }
                     });
                 }
                 if let Some((idx, act)) = action {
                     match act {
                         TaskButtons::RemoveTask => self.remove_task_at(idx),
-                        _ => self.edit_task_at(idx)
+                        TaskButtons::EditTask => self.edit_task_at(idx)
                     }
                 }
             }
