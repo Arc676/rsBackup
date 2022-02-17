@@ -1,19 +1,10 @@
 [package]
 name = "rsbackup"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Arc676/Alessandro Vinciguerra <alesvinciguerra@gmail.com>"]
 edition = "2021"
 
 [dependencies]
-# imgui frontend
-imgui = "0.7.0"
-gfx = "0.18.2"
-gfx_device_gl = "0.16"
-glutin = "0.26"
-image = "0.23"
-old_school_gfx_glutin_ext = "0.26"
-imgui-gfx-renderer = "0.7.0"
-imgui-winit-support = "0.7.0"
 # rsbackup
 structopt = "0.3.21"
 chrono = "0.4"
@@ -27,19 +18,7 @@ path = "src/main.rs"
 
 [[bin]]
 name = "rsbackup-editor"
-path = "editor/main.rs"
-
-[[bin]]
-name = "rsbackup-editor-egui"
 path = "editor2/main.rs"
 
 [features]
-opengl = ["imgui-gfx-renderer/opengl"]
-# FIXME
-# directx = ["imgui-gfx-renderer/directx"]
-default = ["opengl"]
 persistence = ["eframe/persistence", "serde"]
-
-[target.'cfg(windows)'.dev-dependencies]
-gfx_device_dx11 = "0.8"
-gfx_window_dxgi = "0.19"
