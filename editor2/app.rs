@@ -152,7 +152,10 @@ fn path_list_builder(ui: &mut Ui, label: impl Into<WidgetText>, paths: &mut Vec<
 }
 
 fn task_editor(ui: &mut Ui, cfg: &mut TaskConfig) -> bool {
-    // Task type
+    ui.horizontal(|ui| {
+        ui.radio_value(&mut cfg.is_update, true, "Update task");
+        ui.radio_value(&mut cfg.is_update, false, "Backup task");
+    });
 
     ui.horizontal(|ui| {
         ui.label("Task ID:");
