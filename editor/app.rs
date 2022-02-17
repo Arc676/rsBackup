@@ -15,7 +15,7 @@
 
 use std::fs::File;
 use std::io;
-use std::io::{BufReader, ErrorKind, Write};
+use std::io::{BufReader, Error, ErrorKind, Write};
 use eframe::{egui, epi};
 use eframe::egui::{Separator, Ui, WidgetText};
 
@@ -26,11 +26,22 @@ enum TaskButtons {
     EditTask,
 }
 
+enum IOState {
+    FileNotFound,
+    IOError(String),
+    InvalidTask(String),
+    ConfigWritten,
+    ConfigRead
+}
+
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[cfg_attr(feature = "persistence", derive(serde::Deserialize, serde::Serialize))]
 #[cfg_attr(feature = "persistence", serde(default))]
 pub struct ConfigEditor {
     filename: String,
+
+    #[cfg_attr(feature = "persistence", serde(skip))]
+    io_state: Option<IOState>,
 
     #[cfg_attr(feature = "persistence", serde(skip))]
     editing: TaskConfig,
@@ -43,6 +54,7 @@ impl Default for ConfigEditor {
     fn default() -> Self {
         Self {
             filename: String::new(),
+            io_state: None,
             editing: TaskConfig::default(),
             tasks: Vec::new()
         }
@@ -84,7 +96,7 @@ impl ConfigEditor {
                 Ok(task) => new_tasks.push(task),
                 Err(err) => match err.as_str() {
                     "EOF" => break,
-                    _ => ()
+                    err => return Err(Error::new(ErrorKind::Other, err))
                 }
             }
         }
@@ -255,17 +267,33 @@ impl epi::App for ConfigEditor {
             ui.horizontal(|ui| {
                 if ui.button("Load").clicked() {
                     match self.load_from_disk() {
-                        Ok(_) => (),
-                        Err(_) => ()
+                        Ok(_) => self.io_state = Some(IOState::ConfigRead),
+                        Err(e) => self.io_state = match e.kind() {
+                            ErrorKind::NotFound => Some(IOState::FileNotFound),
+                            _ => Some(IOState::IOError(e.to_string()))
+                        }
                     }
                 }
                 if ui.button("Save").clicked() {
                     match self.save_to_disk() {
-                        Ok(_) => (),
-                        Err(_) => ()
+                        Ok(_) => self.io_state = Some(IOState::ConfigWritten),
+                        Err(e) => self.io_state = match e.kind() {
+                            ErrorKind::InvalidData => Some(IOState::InvalidTask(e.to_string())),
+                            _ => Some(IOState::IOError(e.to_string()))
+                        }
                     }
                 }
             });
+            if let Some(state) = &self.io_state {
+                match state {
+                    IOState::FileNotFound => ui.label("Err: file not found"),
+                    IOState::IOError(err) => ui.label(format!("Err: {}", err)),
+                    IOState::ConfigWritten => ui.label("Saved config file"),
+                    IOState::ConfigRead => ui.label("Read config file"),
+                    IOState::InvalidTask(task) => ui.label(format!(
+                        "Err: Task {} is invalid", task))
+                };
+            }
             if ui.button("Exit").clicked() {
                 frame.quit();
             }
