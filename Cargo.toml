@@ -18,7 +18,7 @@ path = "src/main.rs"
 
 [[bin]]
 name = "rsbackup-editor"
-path = "editor2/main.rs"
+path = "editor/main.rs"
 
 [features]
 persistence = ["eframe/persistence", "serde"]
