@@ -15,32 +15,35 @@
 use imgui::ImString;
 
 pub struct TaskConfig {
-	pub id: ImString,
-	pub is_update: bool,
-	pub always_confirm: bool,
-	pub src: ImString,
-	pub dst: ImString,
-	pub backup_path: ImString,
-	pub compare_paths: bool,
-	pub link_dest: Vec<ImString>,
-	pub compare_dest: Vec<ImString>,
-	pub exclude_from: ImString,
-	pub include_from: ImString,
-	pub files_from: ImString,
+    pub id: ImString,
+    pub is_update: bool,
+    pub always_confirm: bool,
+    pub src: ImString,
+    pub dst: ImString,
+    pub backup_path: ImString,
+    pub compare_paths: bool,
+    pub link_dest: Vec<ImString>,
+    pub compare_dest: Vec<ImString>,
+    pub exclude_from: ImString,
+    pub include_from: ImString,
+    pub files_from: ImString,
 }
 
 impl Default for TaskConfig {
-	fn default() -> Self {
-		TaskConfig {
-			id: ImString::with_capacity(255),
-			is_update: true, always_confirm: false,
-			src: ImString::with_capacity(255), dst: ImString::with_capacity(255),
-			backup_path: ImString::with_capacity(255),
-			compare_paths: false,
-			link_dest: Vec::new(), compare_dest: Vec::new(),
-			exclude_from: ImString::with_capacity(255),
-			include_from: ImString::with_capacity(255),
-			files_from: ImString::with_capacity(255)
-		}
-	}
+    fn default() -> Self {
+        TaskConfig {
+            id: ImString::with_capacity(255),
+            is_update: true,
+            always_confirm: false,
+            src: ImString::with_capacity(255),
+            dst: ImString::with_capacity(255),
+            backup_path: ImString::with_capacity(255),
+            compare_paths: false,
+            link_dest: Vec::new(),
+            compare_dest: Vec::new(),
+            exclude_from: ImString::with_capacity(255),
+            include_from: ImString::with_capacity(255),
+            files_from: ImString::with_capacity(255),
+        }
+    }
 }

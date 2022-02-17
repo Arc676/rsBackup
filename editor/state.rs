@@ -13,41 +13,41 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 use imgui::ImString;
-use std::vec::Vec;
 use std::slice::IterMut;
+use std::vec::Vec;
 
 use crate::TaskConfig;
 
 pub struct State {
-	pub filename: ImString,
-	pub editing: TaskConfig,
-	tasks: Vec<TaskConfig>
+    pub filename: ImString,
+    pub editing: TaskConfig,
+    tasks: Vec<TaskConfig>,
 }
 
 impl Default for State {
-	fn default() -> Self {
-		State {
-			filename: ImString::with_capacity(100),
-			editing: TaskConfig::default(),
-			tasks: Vec::new()
-		}
-	}
+    fn default() -> Self {
+        State {
+            filename: ImString::with_capacity(100),
+            editing: TaskConfig::default(),
+            tasks: Vec::new(),
+        }
+    }
 }
 
 impl State {
-	pub fn tasks_iter(&mut self) -> IterMut<TaskConfig> {
-		self.tasks.iter_mut()
-	}
+    pub fn tasks_iter(&mut self) -> IterMut<TaskConfig> {
+        self.tasks.iter_mut()
+    }
 
-	pub fn save_edited_task(&mut self) {
-		self.tasks.push(std::mem::take(&mut self.editing));
-	}
+    pub fn save_edited_task(&mut self) {
+        self.tasks.push(std::mem::take(&mut self.editing));
+    }
 
-	pub fn remove_task_at(&mut self, idx: usize) {
-		self.tasks.remove(idx);
-	}
+    pub fn remove_task_at(&mut self, idx: usize) {
+        self.tasks.remove(idx);
+    }
 
-	pub fn edit_task_at(&mut self, idx: usize) {
-		self.editing = self.tasks.remove(idx);
-	}
+    pub fn edit_task_at(&mut self, idx: usize) {
+        self.editing = self.tasks.remove(idx);
+    }
 }
