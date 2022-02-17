@@ -159,7 +159,7 @@ impl Task {
 			self.dst.as_ref().map_or("", |p| p.to_str().unwrap_or("")))
 	}
 
-	pub fn from_reader(reader: &mut impl BufRead) -> Result<Self, String> {
+	pub fn from_reader(reader: &mut impl BufRead, debug: bool) -> Result<Self, String> {
 		let mut task = Task::new();
 		let mut type_determined = false;
 		loop {
@@ -239,7 +239,7 @@ impl Task {
 		}
 		match task.src {
 			Some(ref path) => {
-				if !path.exists() {
+				if !debug && !path.exists() {
 					return Err(format!("Source path {} nonexistent or inaccessible.", path.to_string()));
 				}
 			},
@@ -249,7 +249,7 @@ impl Task {
 		};
 		match task.dst {
 			Some(ref path) => {
-				if !path.exists() {
+				if !debug && !path.exists() {
 					return Err(format!("Destination path {} nonexistent or inaccessible.", path.to_string()));
 				}
 			},

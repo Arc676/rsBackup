@@ -88,9 +88,15 @@ fn get_yn(prompt: &str, default: bool) -> bool {
 }
 
 fn run_backup(opt: &Options) -> bool {
+	if opt.debug {
+		println!("Running in debug mode...");
+	}
 	let path = match &opt.config {
 		Some(path) => path.as_path(),
-		None => Path::new("~/.arcutillib/backup.conf")
+		None => {
+			println!("No configuration file specified. Defaulting to ~/.arcutillib/backup.conf");
+			Path::new("~/.arcutillib/backup.conf")
+		}
 	};
 	let result = File::open(&path);
 	if let Err(why) = result {
@@ -101,7 +107,7 @@ fn run_backup(opt: &Options) -> bool {
 	let config = result.unwrap();
 	let mut config_reader = BufReader::new(config);
 	loop {
-		match task::Task::from_reader(&mut config_reader) {
+		match task::Task::from_reader(&mut config_reader, opt.debug) {
 			Ok(task) => {
 				if task.is_update_task() {
 					println!("Found update task.");
