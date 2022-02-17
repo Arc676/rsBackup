@@ -37,22 +37,6 @@ pub struct Task {
 	files_from: Option<PathBuf>
 }
 
-trait ToString {
-	fn to_string(self) -> String;
-}
-
-impl ToString for &Option<PathBuf> {
-	fn to_string(self) -> String {
-		self.as_ref().map_or("", |p| p.to_str().unwrap_or("")).to_string()
-	}
-}
-
-impl ToString for &PathBuf {
-	fn to_string(self) -> String {
-		AsRef::<std::path::Path>::as_ref(&self.as_path()).to_str().unwrap_or("").to_string()
-	}
-}
-
 impl Task {
 	fn new() -> Self {
 		Task {
@@ -60,6 +44,13 @@ impl Task {
 			src: None, dst: None, backup_path: None, compare_paths: false,
 			link_dest: Vec::new(), compare_dest: Vec::new(),
 			exclude_others: false, exclude_from: None, include_from: None, files_from: None
+		}
+	}
+
+	fn path_to_string(p: &PathBuf) -> String {
+		match p.to_str() {
+			Some(path) => path.to_string(),
+			None => format!("(Non-Unicode path {:?}", p)
 		}
 	}
 
@@ -76,13 +67,13 @@ impl Task {
 		}
 
 		if let Some(path) = &self.files_from {
-			args.push(format!("--files-from={}", path.to_string()));
+			args.push(format!("--files-from={}", Task::path_to_string(path)));
 		}
 		if let Some(path) = &self.exclude_from {
-			args.push(format!("--exclude-from={}", path.to_string()));
+			args.push(format!("--exclude-from={}", Task::path_to_string(path)));
 		}
 		if let Some(path) = &self.include_from {
-			args.push(format!("--include-from={}", path.to_string()));
+			args.push(format!("--include-from={}", Task::path_to_string(path)));
 		}
 		if self.exclude_others {
 			args.push(String::from("--exclude"));
@@ -90,10 +81,10 @@ impl Task {
 		}
 
 		for path in &self.link_dest {
-			args.push(format!("--link-dest={}", path.to_string()));
+			args.push(format!("--link-dest={}", Task::path_to_string(path)));
 		}
 		for path in &self.compare_dest {
-			args.push(format!("--compare-dest={}", path.to_string()));
+			args.push(format!("--compare-dest={}", Task::path_to_string(path)));
 		}
 		if self.compare_paths {
 			let path = self.backup_path.as_ref().unwrap().as_path();
@@ -102,7 +93,8 @@ impl Task {
 					for entry in iterator {
 						if let Ok(dir) = entry {
 							if dir.path().is_dir() {
-								args.push(format!("--compare-dest={}", dir.path().to_string()));
+								args.push(format!("--compare-dest={}",
+												  Task::path_to_string(&dir.path())));
 							}
 						}
 					}
@@ -115,11 +107,13 @@ impl Task {
 		if dry_run {
 			args.push(String::from("--dry-run"));
 		}
-		args.push(self.src.to_string());
+		let src = self.src.as_ref().unwrap();
+		let dst = self.dst.as_ref().unwrap();
+		args.push(Task::path_to_string(src));
 		if self.is_update {
-			args.push(self.dst.to_string());
+			args.push(Task::path_to_string(dst));
 		} else {
-			args.push(format!("{}/{}", self.dst.to_string(), Utc::now().format("%Y-%m-%d--%H_%M")));
+			args.push(format!("{}/{}", Task::path_to_string(&dst), Utc::now().format("%Y-%m-%d--%H_%M")));
 		}
 		if debug {
 			println!("DEBUG: rsync {}", args.join(" "));
@@ -183,7 +177,8 @@ impl Task {
 					"[BACKUP]" => { task.is_update = false },
 					"[UPDATE]" => {},
 					_ => {
-						return Err(String::from("Failed to parse configuration file. Could not find task."));
+						return Err(String::from(
+							"Failed to parse configuration file. Could not find task."));
 					}
 				};
 				type_determined = true;
@@ -204,7 +199,8 @@ impl Task {
 				task.files_from = Some(PathBuf::from(path));
 			} else if let Some(path) = line.strip_prefix("BPATH=") {
 				if task.is_update {
-					return Err(String::from("Unexpected BPATH parameter in update task configuration."));
+					return Err(String::from(
+						"Unexpected BPATH parameter in update task configuration."));
 				} else {
 					task.backup_path = Some(PathBuf::from(path));
 				}
@@ -220,7 +216,8 @@ impl Task {
 					"[CONFIRM]" => { task.always_confirm = true; },
 					"[COMPARE BPATH]" => {
 						if task.is_update {
-							return Err(String::from("Unexpected [COMPARE BPATH] tag in update task configuration."));
+							return Err(String::from(
+								"Unexpected [COMPARE BPATH] tag in update task configuration."));
 						} else {
 							task.compare_paths = true;
 						}
@@ -240,7 +237,8 @@ impl Task {
 		match task.src {
 			Some(ref path) => {
 				if !debug && !path.exists() {
-					return Err(format!("Source path {} nonexistent or inaccessible.", path.to_string()));
+					return Err(format!("Source path {} nonexistent or inaccessible.",
+									   Task::path_to_string(path)));
 				}
 			},
 			None => {
@@ -250,7 +248,8 @@ impl Task {
 		match task.dst {
 			Some(ref path) => {
 				if !debug && !path.exists() {
-					return Err(format!("Destination path {} nonexistent or inaccessible.", path.to_string()));
+					return Err(format!("Destination path {} nonexistent or inaccessible.",
+									   Task::path_to_string(path)));
 				}
 			},
 			None => {
