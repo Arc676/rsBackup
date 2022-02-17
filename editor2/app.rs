@@ -13,6 +13,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+use std::fs::File;
+use std::io;
+use std::io::{ErrorKind, Write};
 use eframe::{egui, epi};
 use eframe::egui::{Separator, Ui, WidgetText};
 
@@ -59,6 +62,18 @@ impl ConfigEditor {
     fn edit_task_at(&mut self, idx: usize) {
         self.editing = self.tasks.remove(idx);
     }
+
+    fn save_to_disk(&self) -> io::Result<()> {
+        let mut file = File::create(&self.filename)?;
+        for task in &self.tasks {
+            file.write(task.to_string().as_ref())?;
+        }
+        Ok(())
+    }
+
+    fn load_from_disk(&mut self) -> io::Result<()> {
+        Ok(())
+    }
 }
 
 fn show_task(ui: &mut Ui, cfg: &TaskConfig) -> TaskButtons {
@@ -80,6 +95,10 @@ fn show_task(ui: &mut Ui, cfg: &TaskConfig) -> TaskButtons {
         if cfg.compare_paths {
             ui.label("Compares with all other backups");
         }
+    }
+
+    if cfg.exclude_others {
+        ui.label("Ignores all unincluded files");
     }
 
     ui.label("Links:");
@@ -157,6 +176,8 @@ fn task_editor(ui: &mut Ui, cfg: &mut TaskConfig) -> bool {
     });
     ui.checkbox(&mut cfg.compare_paths, "Compare with old backups");
 
+    ui.checkbox(&mut cfg.exclude_others, "Exclude all unincluded files");
+
     path_list_builder(ui, "Linked destinations", &mut cfg.link_dest);
     path_list_builder(ui, "Compared destinations", &mut cfg.compare_dest);
 
@@ -213,10 +234,16 @@ impl epi::App for ConfigEditor {
             });
             ui.horizontal(|ui| {
                 if ui.button("Load").clicked() {
-                    // load config
+                    match self.load_from_disk() {
+                        Ok(_) => (),
+                        Err(_) => ()
+                    }
                 }
                 if ui.button("Save").clicked() {
-                    // save config
+                    match self.save_to_disk() {
+                        Ok(_) => (),
+                        Err(_) => ()
+                    }
                 }
             });
             if ui.button("Exit").clicked() {
