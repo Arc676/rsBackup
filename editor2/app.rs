@@ -15,7 +15,7 @@
 
 use std::fs::File;
 use std::io;
-use std::io::{ErrorKind, Write};
+use std::io::{BufReader, ErrorKind, Write};
 use eframe::{egui, epi};
 use eframe::egui::{Separator, Ui, WidgetText};
 
@@ -72,6 +72,17 @@ impl ConfigEditor {
     }
 
     fn load_from_disk(&mut self) -> io::Result<()> {
+        let file = File::open(&self.filename)?;
+        let mut reader = BufReader::new(file);
+        loop {
+            match TaskConfig::from_reader(&mut reader) {
+                Ok(task) => self.tasks.push(task),
+                Err(err) => match err.as_str() {
+                    "EOF" => break,
+                    _ => ()
+                }
+            }
+        }
         Ok(())
     }
 }

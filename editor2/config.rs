@@ -13,6 +13,7 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 use std::fmt::{Display, Error, Formatter};
+use std::io::BufRead;
 
 pub struct TaskConfig {
     pub id: String,
@@ -33,7 +34,7 @@ pub struct TaskConfig {
 macro_rules! write_if_nonempty {
     ($f:ident, $label:tt, $parameter:expr) => {
         if !$parameter.is_empty() {
-            writeln!($f, "$label={}", $parameter)?;
+            writeln!($f, "{}={}", $label, $parameter)?;
         }
     };
 }
@@ -48,7 +49,7 @@ macro_rules! write_if_set {
 
 impl Display for TaskConfig {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}\nID={}\nSRC={}\nDST={}",
+        writeln!(f, "{}\nID={}\nSRC={}\nDST={}",
                match self.is_update {
                    true => "[UPDATE]",
                    false => "[BACKUP]"
@@ -92,5 +93,92 @@ impl Default for TaskConfig {
             files_from: String::new(),
             exclude_others: false
         }
+    }
+}
+
+impl TaskConfig {
+    pub fn from_reader(reader: &mut impl BufRead) -> Result<Self, String> {
+        let mut task = TaskConfig::default();
+        let mut type_determined = false;
+        loop {
+            let mut line = String::new();
+            match reader.read_line(&mut line) {
+                Ok(len) => {
+                    if len == 0 {
+                        return Err(String::from("EOF"));
+                    }
+                }
+                Err(err) => {
+                    return Err(err.to_string());
+                }
+            }
+            if line.starts_with("#") || line.len() == 1 {
+                continue;
+            }
+            let line = line.trim();
+            if !type_determined {
+                match line {
+                    "[BACKUP]" => task.is_update = false,
+                    "[UPDATE]" => {}
+                    _ => {
+                        return Err(String::from(
+                            "Failed to parse configuration file. Could not find task.",
+                        ));
+                    }
+                };
+                type_determined = true;
+                continue;
+            }
+            if line == "[END]" {
+                break;
+            }
+            if let Some(path) = line.strip_prefix("SRC=") {
+                task.src = path.to_string();
+            } else if let Some(path) = line.strip_prefix("DST=") {
+                task.dst = path.to_string();
+            } else if let Some(path) = line.strip_prefix("EXFR=") {
+                task.exclude_from = path.to_string();
+            } else if let Some(path) = line.strip_prefix("INFR=") {
+                task.include_from = path.to_string();
+            } else if let Some(path) = line.strip_prefix("FIFR=") {
+                task.files_from = path.to_string();
+            } else if let Some(path) = line.strip_prefix("BPATH=") {
+                if task.is_update {
+                    return Err(String::from(
+                        "Unexpected BPATH parameter in update task configuration."
+                    ));
+                } else {
+                    task.backup_path = path.to_string();
+                }
+            } else if let Some(path) = line.strip_prefix("CDST=") {
+                task.compare_dest.push(path.to_string());
+            } else if let Some(path) = line.strip_prefix("LDST=") {
+                task.link_dest.push(path.to_string());
+            } else if let Some(name) = line.strip_prefix("ID=") {
+                task.id = name.to_string();
+            } else {
+                match line {
+                    "[EXCLUDE OTHERS]" => task.exclude_others = true,
+                    "[CONFIRM]" => task.always_confirm = true,
+                    "[COMPARE BPATH]" => if task.is_update {
+                        return Err(String::from(
+                            "Unexpected [COMPARE BPATH] tag in update task configuration."
+                        ));
+                    } else {
+                        task.compare_paths = true;
+                    },
+                    _ => return Err(format!("Unexpected line '{}' in configuration.", line))
+                };
+            }
+        }
+        if !type_determined {
+            return Err(String::from("EOF"));
+        }
+        if task.compare_paths && task.backup_path.is_empty() {
+            return Err(String::from(
+                "[COMPARE BPATH] specified but no backup path given."
+            ));
+        }
+        Ok(task)
     }
 }
