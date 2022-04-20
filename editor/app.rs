@@ -34,7 +34,7 @@ enum IOState {
     ConfigRead
 }
 
-/// We derive Deserialize/Serialize so we can persist app state on shutdown.
+#[derive(Default)]
 #[cfg_attr(feature = "persistence", derive(serde::Deserialize, serde::Serialize))]
 #[cfg_attr(feature = "persistence", serde(default))]
 pub struct ConfigEditor {
@@ -48,17 +48,6 @@ pub struct ConfigEditor {
 
     #[cfg_attr(feature = "persistence", serde(skip))]
     tasks: Vec<TaskConfig>
-}
-
-impl Default for ConfigEditor {
-    fn default() -> Self {
-        Self {
-            filename: String::new(),
-            io_state: None,
-            editing: TaskConfig::default(),
-            tasks: Vec::new()
-        }
-    }
 }
 
 macro_rules! labeled_field {
