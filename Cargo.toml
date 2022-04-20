@@ -22,3 +22,4 @@ path = "editor/main.rs"
 
 [features]
 persistence = ["eframe/persistence", "serde"]
+default = ["persistence"]
