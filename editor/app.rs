@@ -66,7 +66,10 @@ macro_rules! labeled_editor_field {
             if $editing.is_none() && $ui.button("Edit file contents").clicked() {
                 $editing.replace(match fs::read_to_string($target) {
                     Ok(contents) => contents,
-                    Err(e) => format!("Failed to read file: {}", e)
+                    Err(e) => match e.kind() {
+                        ErrorKind::NotFound => String::new(),
+                        _ => format!("Failed to read file: {}", e),
+                    }
                 });
             } else if $editing.is_some() {
                 $ui.text_edit_multiline($editing.as_mut().unwrap());
