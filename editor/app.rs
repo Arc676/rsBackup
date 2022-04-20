@@ -61,6 +61,15 @@ impl Default for ConfigEditor {
     }
 }
 
+macro_rules! labeled_field {
+    ($ui:ident, $lbl:tt, $target:expr) => {
+        $ui.horizontal(|$ui| {
+            $ui.label($lbl);
+            $ui.text_edit_singleline($target);
+        });
+    }
+}
+
 impl ConfigEditor {
     fn save_edited_task(&mut self) {
         self.tasks.push(std::mem::take(&mut self.editing));
@@ -193,26 +202,14 @@ fn task_editor(ui: &mut Ui, cfg: &mut TaskConfig) -> bool {
         ui.radio_value(&mut cfg.is_update, false, "Backup task");
     });
 
-    ui.horizontal(|ui| {
-        ui.label("Task ID:");
-        ui.text_edit_singleline(&mut cfg.id);
-    });
+    labeled_field!(ui, "Task ID:", &mut cfg.id);
 
     ui.checkbox(&mut cfg.always_confirm, "Always ask for confirmation");
 
-    ui.horizontal(|ui| {
-        ui.label("Source path:");
-        ui.text_edit_singleline(&mut cfg.src);
-    });
-    ui.horizontal(|ui| {
-        ui.label("Destination path:");
-        ui.text_edit_singleline(&mut cfg.dst);
-    });
+    labeled_field!(ui, "Source path:", &mut cfg.src);
+    labeled_field!(ui, "Destination path:", &mut cfg.dst);
 
-    ui.horizontal(|ui| {
-        ui.label("Backup path:");
-        ui.text_edit_singleline(&mut cfg.backup_path);
-    });
+    labeled_field!(ui, "Backup path:", &mut cfg.backup_path);
     ui.checkbox(&mut cfg.compare_paths, "Compare with old backups");
 
     ui.checkbox(&mut cfg.exclude_others, "Exclude all unincluded files");
@@ -220,18 +217,9 @@ fn task_editor(ui: &mut Ui, cfg: &mut TaskConfig) -> bool {
     path_list_builder(ui, "Linked destinations", &mut cfg.link_dest);
     path_list_builder(ui, "Compared destinations", &mut cfg.compare_dest);
 
-    ui.horizontal(|ui| {
-        ui.label("Include from:");
-        ui.text_edit_singleline(&mut cfg.include_from);
-    });
-    ui.horizontal(|ui| {
-        ui.label("Exclude from:");
-        ui.text_edit_singleline(&mut cfg.exclude_from);
-    });
-    ui.horizontal(|ui| {
-        ui.label("Files from:");
-        ui.text_edit_singleline(&mut cfg.files_from);
-    });
+    labeled_field!(ui, "Include from:", &mut cfg.include_from);
+    labeled_field!(ui, "Exclude from:", &mut cfg.exclude_from);
+    labeled_field!(ui, "Files from:", &mut cfg.files_from);
 
     ui.button("Save Task").clicked()
 }
