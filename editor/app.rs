@@ -75,8 +75,8 @@ macro_rules! labeled_editor_field {
                 $ui.text_edit_multiline($editing.as_mut().unwrap());
                 if $ui.button("Save file contents").clicked() {
                     match fs::write($target, $editing.as_ref().unwrap() as &str) {
-                        Ok(_) => $editing.take(),
-                        Err(e) => panic!("Failed to write: {}", e)
+                        Ok(_) => { $editing.take(); }
+                        Err(e) => *$target = format!("Failed to write: {}", e)
                     };
                 }
             }
