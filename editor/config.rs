@@ -70,7 +70,7 @@ impl Display for TaskConfig {
         write_if_set!(f, "[EXCLUDE OTHERS]", self.exclude_others);
         write_if_set!(f, "[CONFIRM]", self.always_confirm);
         write_if_set!(f, "[COMPARE BPATH]", self.compare_paths);
-        write!(f, "[END]")
+        writeln!(f, "[END]")
     }
 }
 
