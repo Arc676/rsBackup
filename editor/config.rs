@@ -29,6 +29,10 @@ pub struct TaskConfig {
     pub include_from: String,
     pub files_from: String,
     pub exclude_others: bool,
+
+    pub editing_include: Option<String>,
+    pub editing_exclude: Option<String>,
+    pub editing_files: Option<String>,
 }
 
 macro_rules! write_if_nonempty {
@@ -89,7 +93,10 @@ impl Default for TaskConfig {
             exclude_from: String::new(),
             include_from: String::new(),
             files_from: String::new(),
-            exclude_others: false
+            exclude_others: false,
+            editing_include: None,
+            editing_exclude: None,
+            editing_files: None,
         }
     }
 }

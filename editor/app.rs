@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-use std::fs::File;
+use std::fs::{self, File};
 use std::io;
 use std::io::{BufReader, Error, ErrorKind, Write};
 use eframe::{egui, epi};
@@ -56,6 +56,28 @@ macro_rules! labeled_field {
             $ui.label($lbl);
             $ui.text_edit_singleline($target);
         });
+    }
+}
+
+macro_rules! labeled_editor_field {
+    ($ui:ident, $lbl:tt, $target:expr, $editing:expr) => {
+        labeled_field!($ui, $lbl, $target);
+        if $target.len() > 0 {
+            if $editing.is_none() && $ui.button("Edit file contents").clicked() {
+                $editing.replace(match fs::read_to_string($target) {
+                    Ok(contents) => contents,
+                    Err(e) => format!("Failed to read file: {}", e)
+                });
+            } else if $editing.is_some() {
+                $ui.text_edit_multiline($editing.as_mut().unwrap());
+                if $ui.button("Save file contents").clicked() {
+                    match fs::write($target, $editing.as_ref().unwrap() as &str) {
+                        Ok(_) => $editing.take(),
+                        Err(e) => panic!("Failed to write: {}", e)
+                    };
+                }
+            }
+        }
     }
 }
 
@@ -206,9 +228,9 @@ fn task_editor(ui: &mut Ui, cfg: &mut TaskConfig) -> bool {
     path_list_builder(ui, "Linked destinations", &mut cfg.link_dest);
     path_list_builder(ui, "Compared destinations", &mut cfg.compare_dest);
 
-    labeled_field!(ui, "Include from:", &mut cfg.include_from);
-    labeled_field!(ui, "Exclude from:", &mut cfg.exclude_from);
-    labeled_field!(ui, "Files from:", &mut cfg.files_from);
+    labeled_editor_field!(ui, "Include from:", &mut cfg.include_from, cfg.editing_include);
+    labeled_editor_field!(ui, "Exclude from:", &mut cfg.exclude_from, cfg.editing_exclude);
+    labeled_editor_field!(ui, "Files from:", &mut cfg.files_from, cfg.editing_files);
 
     ui.button("Save Task").clicked()
 }
